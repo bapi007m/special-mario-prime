@@ -20,3 +20,13 @@ Controls:
 - Space / Up / W = jump
 - Stomp Bowser 5 times
 # special-mario-prime
+
+
+<img width="1437" height="926" alt="image" src="https://github.com/user-attachments/assets/ddfa96e8-79c5-4cf8-92e6-c04b67b896db" />
+
+
+<img width="1434" height="928" alt="image" src="https://github.com/user-attachments/assets/9e75fa9c-f1ce-4620-98f3-b84bc33cf145" />
+
+
+<img width="1437" height="922" alt="image" src="https://github.com/user-attachments/assets/fd6a99a5-3350-4120-a4e3-935ed0c81ead" />
+
