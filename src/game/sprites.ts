@@ -375,10 +375,11 @@ export function drawCoin(ctx:CanvasRenderingContext2D,x:number,y:number,spin:num
 
 // The hero: chibi adventurer with a star cap, big shiny eyes and rosy cheeks.
 // (x, y) is the centre of the feet; drawn facing right, face=-1 mirrors it.
-export function drawHero(ctx:CanvasRenderingContext2D,x:number,y:number,t:number,face:number,moving:boolean,air:boolean,hug=false){
+// size grows the hero a little while he has mushroom power.
+export function drawHero(ctx:CanvasRenderingContext2D,x:number,y:number,t:number,face:number,moving:boolean,air:boolean,hug=false,size=1){
  ctx.save();
  ctx.translate(x,y);
- ctx.scale(face*HERO_S,HERO_S);
+ ctx.scale(face*HERO_S*size,HERO_S*size);
  const swing=moving&&!air?Math.sin(t*16)*4:0;
  const bob=moving&&!air?Math.abs(Math.sin(t*16))*1.5:Math.sin(t*3)*.6;
  const red="#ef3b3b",shade="#c92a2a",blue="#2f6fe0",skin="#ffd9b8";
@@ -436,6 +437,35 @@ export function drawHero(ctx:CanvasRenderingContext2D,x:number,y:number,t:number
  oval(ctx,-4,-46,4,2,"rgba(255,255,255,.35)");
  oval(ctx,1,-43.5,4.6,4.6,"#fff");
  star(ctx,1,-43.3,3.6,"#ffc400");
+ ctx.restore();
+}
+
+// Power mushroom: glowing purple cap with golden spots and a cute face. (x, y) = base centre.
+export function drawMushroom(ctx:CanvasRenderingContext2D,x:number,y:number,t:number,scale=1){
+ ctx.save();
+ ctx.translate(x,y);ctx.scale(scale,scale);
+ const bob=Math.sin(t*4)*2;
+ ctx.save();ctx.globalCompositeOperation="lighter";
+ const gl=ctx.createRadialGradient(0,-16+bob,2,0,-16+bob,34+Math.sin(t*6)*4);
+ gl.addColorStop(0,"rgba(255,200,90,.5)");gl.addColorStop(1,"rgba(255,120,220,0)");
+ oval(ctx,0,-16+bob,38,38,gl);
+ ctx.restore();
+ oval(ctx,0,-1,12,3,"rgba(0,0,0,.25)");
+ ctx.translate(0,bob);
+ // Stem with a little face.
+ ctx.fillStyle="#fff1dc";ctx.beginPath();ctx.roundRect(-8,-15,16,15,6);ctx.fill();
+ oval(ctx,-3,-8,1.6,2.4,"#2a1a2a");oval(ctx,3,-8,1.6,2.4,"#2a1a2a");
+ oval(ctx,-2.6,-8.8,.6,.6,"#fff");oval(ctx,3.4,-8.8,.6,.6,"#fff");
+ oval(ctx,-6,-5,2,1.2,"rgba(255,120,150,.6)");oval(ctx,6,-5,2,1.2,"rgba(255,120,150,.6)");
+ // Cap.
+ const cg=ctx.createLinearGradient(0,-34,0,-12);
+ cg.addColorStop(0,"#d86bff");cg.addColorStop(1,"#8a2be2");
+ ctx.fillStyle=cg;ctx.beginPath();
+ ctx.moveTo(-17,-13);ctx.bezierCurveTo(-18,-34,18,-34,17,-13);ctx.quadraticCurveTo(0,-9,-17,-13);ctx.fill();
+ for(const [sx,sy,r] of [[-9,-21,3.6],[3,-27,4.2],[10,-17,3],[-2,-16,2.4]])oval(ctx,sx,sy,r,r*.85,"#ffd23f");
+ oval(ctx,-8,-28,5,2.4,"rgba(255,255,255,.45)",-.5);
+ const ph=(t*.9)%1.4;
+ if(ph<.3)sparkle(ctx,13,-30,Math.sin(ph/.3*Math.PI)*6,"#fff8c0");
  ctx.restore();
 }
 

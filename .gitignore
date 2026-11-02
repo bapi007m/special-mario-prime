@@ -1,0 +1,39 @@
+# Dependencies (also holds Vite's .vite cache and TypeScript's .tmp/*.tsbuildinfo)
+node_modules/
+
+# Build output (npm run build)
+dist/
+dist-ssr/
+*.tsbuildinfo
+
+# Vite caches and temporary config bundles
+.vite/
+vite.config.*.timestamp-*
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files (keep an example if one is added)
+.env
+.env.*
+!.env.example
+*.local
+
+# Editor settings
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# OS files
+.DS_Store
+Thumbs.db

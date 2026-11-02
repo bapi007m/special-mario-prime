@@ -30,6 +30,10 @@ export const platforms:Plat[]=[
 
 export const lavaPits=[{x:6600,w:200},{x:7150,w:250}];
 export const springs=[{x:1640},{x:4130}];
+// Power mushrooms, standing on the ground or on floating islands.
+export const mushroomData=[
+ {x:700,y:G},{x:1620,y:250},{x:3815,y:210},{x:4265,y:190},{x:5805,y:260},{x:6300,y:G},{x:7055,y:380},
+];
 export const checkpoints=[2250,4350,6100];
 export const zones=[
  {x:0,name:"Sunny Meadow"},{x:2400,name:"Whispering Forest"},{x:4500,name:"Sunset Canyon"},

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import {W,H,G,PW,PH,ARENA_X,ARENA_END,ARENA_CAM,WORLD,BOSS_MIN,BOSS_MAX,BOSS_HP,CAGE_X,CAGE_Y,PEACH_MEET,
-  clamp,oval,tri,heart} from "./game/core";
+  clamp,oval,tri,heart,sparkle} from "./game/core";
 import type {Game,Rect,Status} from "./game/core";
 import {drawHero,drawPeach,drawKoopa,drawKoopaShell,drawCoin,drawPeachHands,drawShot,drawFx,drawEnemy,
-  drawCage,drawSpring,drawCheckpoint} from "./game/sprites";
-import {platforms,lavaPits,coinsData,enemyData,springs,checkpoints,zones,drawBackground,drawPlatform,
+  drawCage,drawSpring,drawCheckpoint,drawMushroom} from "./game/sprites";
+import {platforms,lavaPits,coinsData,enemyData,springs,mushroomData,checkpoints,zones,drawBackground,drawPlatform,
   drawLava,drawArenaBack,drawArenaFront,drawAmbient,drawVignette} from "./game/world";
 import {unlockAudio,sfx,playMusic,setMusicRate,speak,sob,toggleMute,pauseAudio} from "./game/audio";
 
@@ -14,7 +14,8 @@ const HIT_WORDS=["POW!","BAM!","WHAM!","CRUNCH!","SMASH!"];
 
 function makeGame(status:Status):Game{
  return {
-  p:{x:80,y:G-PH,vx:0,vy:0,ground:true,face:1,kb:0,plat:null,coyote:0},
+  p:{x:80,y:G-PH,vx:0,vy:0,ground:true,face:1,kb:0,plat:null,coyote:0,power:false},
+  shrooms:mushroomData.map(m=>({...m,vy:0,taken:false})),powerT:0,
   enemies:enemyData.map(e=>({...e})),
   coins:new Set(),score:0,coinCount:0,lives:5,camera:0,
   check:80,checks:new Set(),springT:springs.map(()=>0),
@@ -80,6 +81,15 @@ function say(g:Game,line:string,happy=false){
 function hurt(g:Game,from?:number,fell=false){
  if(g.invul>0&&!fell)return;
  const p=g.p;
+ if(p.power&&!fell){
+  // Mushroom power absorbs the hit instead of a life.
+  p.power=false;g.powerT=-40;g.invul=110;g.shake=Math.max(g.shake,8);sfx("powerdown");
+  burst(g,p.x+PW/2,p.y+PH/2,["#d86bff","#ffd23f","#fff"],14,3.5);
+  text(g,p.x+PW/2,p.y-20,"POWER LOST","#e9b0ff",20,60);
+  if(from!==undefined){p.kb=22;p.vx=(Math.sign(p.x+PW/2-from)||-1)*6;p.vy=-8;p.ground=false;}
+  return;
+ }
+ p.power=false;
  g.lives--;sfx("hurt");g.shake=Math.max(g.shake,10);g.red=.6;
  burst(g,p.x+PW/2,p.y+PH/2,["#fff","#ff6b6b"],10,3);
  if(g.lives<=0){g.status="gameover";playMusic(null);return;}
@@ -226,6 +236,8 @@ function damageBoss(g:Game,jumpHeld:boolean,top:number){
   g.bannerText=b.phase===2?"KING KOOPA IS ENRAGED!":"FINAL FURY!";g.bannerT=130;
   setMusicRate(1+(b.phase-1)*.1);
   say(g,b.phase===2?"Hurry, hero! Help!":"Help! Please, help me!");
+  // A power mushroom drops from the ceiling, away from the hero.
+  g.shrooms.push({x:pc<ARENA_X+380?ARENA_END-200:ARENA_X+80,y:40,vy:0,taken:false});
  }else{
   b.state="stagger";b.timer=30;b.vx=(Math.sign(bc-pc)||1)*4;
  }
@@ -268,6 +280,7 @@ function drawHUD(ctx:CanvasRenderingContext2D,g:Game,t:number,progress:boolean){
  ctx.fillStyle="#fff";ctx.font="800 17px system-ui";ctx.textAlign="left";
  ctx.fillText(`× ${g.coinCount}`,52,62);
  ctx.fillText(`SCORE ${String(g.score).padStart(6,"0")}`,140,62);
+ if(g.p.power){drawMushroom(ctx,286,48,t,.75);sparkle(ctx,300,22,3+Math.abs(Math.sin(t*5))*3,"#fff8c0");}
 
  if(!progress){ctx.restore();return;}
  // Journey progress bar.
@@ -367,7 +380,7 @@ export default function App(){
   if(p.plat?.kind==="move"){p.x+=p.plat.dx??0;p.y+=p.plat.dy??0;}
   if(p.kb>0)p.kb--;
   else{
-   const target=(right?4.6:0)-(left?4.6:0);
+   const speed=p.power?5.4:4.6,target=(right?speed:0)-(left?speed:0);
    p.vx+=(target-p.vx)*.3;
    if(Math.abs(p.vx)<.05)p.vx=0;
    if(right!==left)p.face=right?1:-1;
@@ -377,7 +390,7 @@ export default function App(){
   if(g.jumpBuf>0)g.jumpBuf--;
   if(p.ground)p.coyote=7;else if(p.coyote>0)p.coyote--;
   if(g.jumpBuf>0&&p.coyote>0){
-   p.vy=-14;p.ground=false;p.coyote=0;g.jumpBuf=0;
+   p.vy=p.power?-15.5:-14;p.ground=false;p.coyote=0;g.jumpBuf=0;
    sfx("jump");dust(g,p.x+PW/2,p.y+PH,3);
   }
   if(p.vy<-5&&!held)p.vy+=1.1;
@@ -431,6 +444,18 @@ export default function App(){
    if(g.coinCount%50===0){g.lives++;sfx("oneup");text(g,p.x+PW/2,p.y-30,"1UP!","#7dff8a",28,70);}
   });
 
+  for(const m of g.shrooms){
+   if(m.taken)continue;
+   if(m.y<G&&m.x>ARENA_X){m.vy+=.4;m.y=Math.min(G,m.y+m.vy);if(m.y>=G)dust(g,m.x,G,3);}
+   if(!overlap(hero,{x:m.x-15,y:m.y-32,w:30,h:32}))continue;
+   m.taken=true;g.score+=100;
+   if(p.power)text(g,m.x,m.y-40,"+100","#ffe066",20);
+   else{p.power=true;g.powerT=40;text(g,m.x,m.y-40,"POWER UP!","#ffd23f",26,70);}
+   sfx("powerup");g.flash=Math.max(g.flash,.25);
+   burst(g,m.x,m.y-16,["#ffd23f","#d86bff","#fff","#7fd4ff"],22,4.5);
+   g.fx.push({x:m.x,y:m.y-16,vx:0,vy:0,life:26,max:26,kind:"ring",color:"#ffd23f",size:60});
+  }
+
   for(const e of g.enemies){
    if(Math.abs(e.x-p.x)>1400)continue;
    e.t++;
@@ -451,7 +476,7 @@ export default function App(){
    }
    if(g.invul>0||!overlap(hero,box))continue;
    const stomp=p.vy>0&&prevBottom<=box.y+10;
-   if(stomp&&(e.kind==="pawn"||e.kind==="bat")){
+   if(stomp&&(e.kind==="pawn"||e.kind==="bat"||(e.kind==="spiky"&&p.power))){
     e.alive=false;e.squash=20;
     p.y=box.y-PH-1;p.vy=held?-12:-9;g.score+=25;sfx("squish");
     burst(g,box.x+box.w/2,box.y+12,["#fff","#ffe066",e.kind==="bat"?"#9b6bd6":"#c8875a"],10,3);
@@ -625,6 +650,9 @@ export default function App(){
   if(g.shoutT>0)g.shoutT--;
   if(g.bannerT>0)g.bannerT--;
   if(g.lightning>0)g.lightning--;
+  if(g.powerT!==0)g.powerT-=Math.sign(g.powerT);
+  if(g.p.power&&g.frame%5===0&&Math.abs(g.p.vx)>.5)
+   g.fx.push({x:g.p.x+PW/2-g.p.face*12+(Math.random()-.5)*10,y:g.p.y+10+Math.random()*30,vx:0,vy:-.4,life:24,max:24,kind:"spark",color:Math.random()<.5?"#ffd23f":"#e9b0ff",size:3});
   if(g.titleT>0&&++g.titleT>210)g.titleT=0;
   g.springT=g.springT.map(v=>Math.max(0,v-1));
   if(g.status!=="intro"){g.bars=Math.max(0,g.bars-.03);g.dark=Math.max(0,g.dark-.01);}
@@ -673,6 +701,7 @@ export default function App(){
   springs.forEach((s,i)=>{if(near(s.x,40))drawSpring(ctx,s.x,g.springT[i]/14);});
   checkpoints.forEach(c=>{if(near(c))drawCheckpoint(ctx,c,g.checks.has(c),t);});
   coinsData.forEach((c,i)=>{if(!g.coins.has(i)&&near(c.x))drawCoin(ctx,c.x,c.y+Math.sin(t*3+i)*3,t*3.2+i*.9,t+i*.37);});
+  g.shrooms.forEach(m=>{if(!m.taken&&near(m.x))drawMushroom(ctx,m.x,m.y,t);});
   g.enemies.forEach(e=>{if(near(e.x,30))drawEnemy(ctx,e,t);});
 
   // Princess Peach in her hanging cage.
@@ -706,7 +735,17 @@ export default function App(){
 
   if(p.ground)oval(ctx,p.x+PW/2,p.y+PH-1,15,4,"rgba(0,0,0,.25)");
   ctx.globalAlpha=g.invul>0&&Math.floor(g.invul/5)%2===0?.45:1;
-  drawHero(ctx,p.x+PW/2,p.y+PH,t,p.face,Math.abs(p.vx)>.3,!p.ground,g.hug>0);
+  if(p.power){
+   ctx.save();ctx.globalCompositeOperation="lighter";
+   const r=44+Math.sin(t*8)*5,ag=ctx.createRadialGradient(p.x+PW/2,p.y+PH/2,6,p.x+PW/2,p.y+PH/2,r);
+   ag.addColorStop(0,"rgba(255,210,80,.42)");ag.addColorStop(.6,"rgba(216,107,255,.18)");ag.addColorStop(1,"rgba(216,107,255,0)");
+   oval(ctx,p.x+PW/2,p.y+PH/2,r,r*1.1,ag);
+   ctx.restore();
+  }
+  // Grow/shrink flicker while gaining or losing power.
+  const pt=Math.abs(g.powerT),flick=pt>0&&Math.floor(pt/4)%2===0;
+  const size=(p.power?1.12:1)*(flick?(g.powerT>0?.9:1.12):1);
+  drawHero(ctx,p.x+PW/2,p.y+PH,t,p.face,Math.abs(p.vx)>.3,!p.ground,g.hug>0,size);
   ctx.globalAlpha=1;
   if(g.hug>0)drawPeachHands(ctx,p.x+PW/2,p.y+PH);
 
@@ -835,7 +874,8 @@ export default function App(){
     <div className="overlay title">
      <h2 className="logo">The Rescue of Princess Peach</h2>
      <p className="story">King Koopa has kidnapped Princess Peach and locked her in a cage high in his Burning Castle!
-      Journey through the Sunny Meadow, Whispering Forest and Sunset Canyon, survive the lava, and face the tyrant himself.</p>
+      Journey through the Sunny Meadow, Whispering Forest and Sunset Canyon, survive the lava, and face the tyrant himself.
+      Grab the glowing 🍄 power mushrooms to run faster, jump higher, stomp spiky foes and survive an extra hit!</p>
      <button onClick={start}>▶ Start Adventure</button>
      <p className="small">Press Enter to start · turn your sound on 🔊</p>
     </div>}

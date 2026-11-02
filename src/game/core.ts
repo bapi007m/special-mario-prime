@@ -23,7 +23,10 @@ export type Boss={x:number;y:number;vx:number;vy:number;hp:number;active:boolean
   state:BossState;timer:number;face:number;volley:number;phase:number;bounces:number;spin:number};
 
 export type Game={
-  p:{x:number;y:number;vx:number;vy:number;ground:boolean;face:number;kb:number;plat:Plat|null;coyote:number};
+  p:{x:number;y:number;vx:number;vy:number;ground:boolean;face:number;kb:number;plat:Plat|null;coyote:number;power:boolean};
+  // Power mushrooms (y is the surface they sit on); powerT animates gaining (+) or losing (-) power.
+  shrooms:{x:number;y:number;vy:number;taken:boolean}[];
+  powerT:number;
   enemies:Enemy[];
   coins:Set<number>;
   score:number;

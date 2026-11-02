@@ -70,6 +70,8 @@ const SFX={
  squish:()=>{const t=now();note(t,420,.09,"square",.07,110);note(t+.08,660,.12,"square",.05,1320);},
  spring:()=>note(now(),160,.35,"square",.06,900),
  check:()=>{const t=now();[660,880,1320].forEach((f,i)=>note(t+i*.08,f,.25,"square",.05));},
+ powerup:()=>{const t=now();[392,523,659,784,1047,1319,1568].forEach((f,i)=>{note(t+i*.055,f,.22,"square",.045);note(t+i*.055,f*2,.18,"triangle",.03);});},
+ powerdown:()=>{const t=now();[880,740,587,440,330].forEach((f,i)=>note(t+i*.07,f,.16,"square",.05));},
  oneup:()=>{const t=now();[660,784,1047,1319].forEach((f,i)=>note(t+i*.09,f,.2,"square",.05));},
  hurt:()=>note(now(),700,.45,"square",.06,140),
  fire:()=>{const t=now();noise(t,.45,.25,"bandpass",1400,300);note(t,320,.35,"sawtooth",.06,90);},
