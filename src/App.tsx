@@ -6,7 +6,7 @@ import {drawHero,drawPeach,drawKoopa,drawKoopaShell,drawCoin,drawPeachHands,draw
   drawCage,drawSpring,drawCheckpoint} from "./game/sprites";
 import {platforms,lavaPits,coinsData,enemyData,springs,checkpoints,zones,drawBackground,drawPlatform,
   drawLava,drawArenaBack,drawArenaFront,drawAmbient,drawVignette} from "./game/world";
-import {unlockAudio,sfx,playMusic,setMusicRate,speak,sob,toggleMute} from "./game/audio";
+import {unlockAudio,sfx,playMusic,setMusicRate,speak,sob,toggleMute,pauseAudio} from "./game/audio";
 
 const HELP_LINES=["Help! Help!","Help me! Please, help!","Hero! Help! Help me!","Somebody, help me!"];
 const BOSS_LINES=["Help! Help me!","Hurry, hero! Help!","Be careful!","Please save me!"];
@@ -328,6 +328,18 @@ export default function App(){
  const uiRef=useRef({score:0,status:"title" as Status});
  const [ui,setUi]=useState(uiRef.current);
  const [muted,setMuted]=useState(false);
+ const pausedRef=useRef(false);
+ const [paused,setPaused]=useState(false);
+
+ // Pausing is allowed whenever the action is running (including cutscenes).
+ const setPause=(on:boolean)=>{
+  const s=game.current.status;
+  if(on&&!(s==="playing"||s==="intro"||s==="boss"||s==="ending"))return;
+  if(on===pausedRef.current)return;
+  pausedRef.current=on;setPaused(on);
+  keys.current={};
+  pauseAudio(on);
+ };
 
  const sync=()=>{
   const g=game.current,u=uiRef.current;
@@ -338,6 +350,7 @@ export default function App(){
  };
 
  const start=()=>{
+  setPause(false);
   unlockAudio();
   game.current=makeGame("playing");
   setMusicRate(1);playMusic("level");
@@ -752,10 +765,13 @@ export default function App(){
 
  function loop(){
   const g=game.current;
-  if(g.slow>0){g.slow--;g.slowTick=(g.slowTick+1)%3;if(g.slowTick===0)update();}
-  else update();
-  const ctx=canvasRef.current?.getContext("2d");
-  if(ctx)draw(ctx);
+  // While paused nothing updates or redraws, so the last frame stays frozen.
+  if(!pausedRef.current){
+   if(g.slow>0){g.slow--;g.slowTick=(g.slowTick+1)%3;if(g.slowTick===0)update();}
+   else update();
+   const ctx=canvasRef.current?.getContext("2d");
+   if(ctx)draw(ctx);
+  }
   sync();
   raf.current=requestAnimationFrame(loop);
  }
@@ -765,34 +781,55 @@ export default function App(){
    if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"," ","a","d","w"].includes(e.key))e.preventDefault();
    unlockAudio();
    if(e.key==="m"||e.key==="M"){setMuted(toggleMute());return;}
+   if(e.key==="p"||e.key==="P"||e.key==="Escape"){if(!e.repeat)setPause(!pausedRef.current);return;}
+   if(pausedRef.current)return;
    const g=game.current;
    if(g.status==="title"&&(e.key==="Enter"||e.key===" ")){start();return;}
    keys.current[e.key]=true;
    if(!e.repeat&&(e.key===" "||e.key==="ArrowUp"||e.key==="w"||e.key==="W"))g.jumpBuf=8;
   };
   const up=(e:KeyboardEvent)=>{keys.current[e.key]=false;};
+  // Auto-pause when the player switches tabs or windows.
+  const away=()=>{if(document.hidden||!document.hasFocus())setPause(true);};
   window.addEventListener("keydown",down);
   window.addEventListener("keyup",up);
+  window.addEventListener("blur",away);
+  document.addEventListener("visibilitychange",away);
   raf.current=requestAnimationFrame(loop);
   return()=>{
    window.removeEventListener("keydown",down);
    window.removeEventListener("keyup",up);
+   window.removeEventListener("blur",away);
+   document.removeEventListener("visibilitychange",away);
    if(raf.current)cancelAnimationFrame(raf.current);
   };
  },[]);
 
  const hold=(key:string,on:boolean)=>{
+  if(pausedRef.current)return;
   keys.current[key]=on;
   if(on){unlockAudio();if(key==="jump")game.current.jumpBuf=8;}
  };
 
  return <main className="page">
   <h1>🍄 React Platform Adventure — Bowser & Peach</h1>
-  <p className="hint">← → / A D move · Space / ↑ / W jump (hold to jump higher) · M mute</p>
+  <p className="hint">← → / A D move · Space / ↑ / W jump (hold to jump higher) · P / Esc pause · M mute</p>
 
   <div className="game-wrap">
    <canvas ref={canvasRef} width={W} height={H}/>
+   {(ui.status==="playing"||ui.status==="intro"||ui.status==="boss"||ui.status==="ending")&&
+    <button className="mute pause-btn" onClick={()=>setPause(!pausedRef.current)} aria-label={paused?"Resume":"Pause"}>{paused?"▶":"⏸"}</button>}
    <button className="mute" onClick={()=>{unlockAudio();setMuted(toggleMute());}} aria-label={muted?"Unmute":"Mute"}>{muted?"🔇":"🔊"}</button>
+
+   {paused&&
+    <div className="overlay paused">
+     <h2>⏸ Paused</h2>
+     <p className="small">Press P or Esc to resume</p>
+     <div className="menu">
+      <button onClick={()=>setPause(false)}>▶ Resume</button>
+      <button onClick={start}>↻ Restart</button>
+     </div>
+    </div>}
 
    {ui.status==="title"&&
     <div className="overlay title">

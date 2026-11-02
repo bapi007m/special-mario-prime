@@ -1,6 +1,6 @@
 // Synthesized sound effects, music and Princess Peach's voice (Web Audio + Speech Synthesis).
 
-let actx:AudioContext|null=null,master:GainNode|null=null,noiseBuf:AudioBuffer|null=null,muted=false;
+let actx:AudioContext|null=null,master:GainNode|null=null,noiseBuf:AudioBuffer|null=null,muted=false,paused=false;
 const VOL=.7;
 
 export function unlockAudio(){
@@ -14,9 +14,16 @@ export function unlockAudio(){
    for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
    window.setInterval(schedule,25);
   }
-  if(actx.state==="suspended")void actx.resume();
+  if(actx.state==="suspended"&&!paused)void actx.resume();
   if("speechSynthesis" in window)speechSynthesis.getVoices();
  }catch{/* audio unavailable */}
+}
+
+// Freezes music, sound effects and Peach's voice while the game is paused.
+export function pauseAudio(on:boolean){
+ paused=on;
+ if(actx)void (on?actx.suspend():actx.resume());
+ if("speechSynthesis" in window){if(on)speechSynthesis.pause();else speechSynthesis.resume();}
 }
 
 export function toggleMute(){
