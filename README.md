@@ -24,9 +24,13 @@ Controls:
 
 <img width="1437" height="926" alt="image" src="https://github.com/user-attachments/assets/ddfa96e8-79c5-4cf8-92e6-c04b67b896db" />
 
+<img width="1530" height="950" alt="image" src="https://github.com/user-attachments/assets/e966e324-e1d9-497f-9674-d38b9181d26d" />
 
 <img width="1434" height="928" alt="image" src="https://github.com/user-attachments/assets/9e75fa9c-f1ce-4620-98f3-b84bc33cf145" />
 
+<img width="1513" height="950" alt="image" src="https://github.com/user-attachments/assets/25aaecad-8e41-49d0-b208-7cded5ef9c47" />
+
+<img width="1439" height="925" alt="image" src="https://github.com/user-attachments/assets/e091552e-3d4e-48b3-b103-004a017b17bc" />
 
 <img width="1437" height="922" alt="image" src="https://github.com/user-attachments/assets/fd6a99a5-3350-4120-a4e3-935ed0c81ead" />
 
